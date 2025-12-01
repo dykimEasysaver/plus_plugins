@@ -85,7 +85,7 @@ internal class MethodCallHandlerImpl(
     }
 
     fun getEthernetMacAddress(): String {
-        var macAddress = "20:00:00:00:00:00"
+        var macAddress = ""
 
         try {
             val allNetworkInterfaces: List<NetworkInterface> =
@@ -113,13 +113,13 @@ internal class MethodCallHandlerImpl(
         }
 
 
-        if (macAddress == "20:00:00:00:00:00") {
+        if (macAddress == "") {
             val lanMacAddress = getLANMacAddress()
             if (lanMacAddress != null)
                 return lanMacAddress
         }
 
-        if (macAddress == "20:00:00:00:00:00") {
+        if (macAddress == "") {
             val lanMacAddress = getDongleMacAddress()
             if (lanMacAddress != null)
                 return lanMacAddress
