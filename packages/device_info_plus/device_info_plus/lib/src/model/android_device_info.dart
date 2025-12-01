@@ -37,6 +37,8 @@ class AndroidDeviceInfo extends BaseDeviceInfo {
     required this.isLowRamDevice,
     required this.physicalRamSize,
     required this.availableRamSize,
+    required this.serialNumber,
+    required this.macAddress,
   }) : supported32BitAbis = List<String>.unmodifiable(supported32BitAbis),
        supported64BitAbis = List<String>.unmodifiable(supported64BitAbis),
        supportedAbis = List<String>.unmodifiable(supportedAbis),
@@ -163,6 +165,10 @@ class AndroidDeviceInfo extends BaseDeviceInfo {
   /// https://developer.android.com/reference/android/app/ActivityManager.MemoryInfo#availMem
   final int availableRamSize;
 
+  final String serialNumber;
+
+  final String macAddress;
+
   /// Deserializes from the message received from [_kChannel].
   static AndroidDeviceInfo fromMap(Map<String, dynamic> map) {
     return AndroidDeviceInfo._(
@@ -195,6 +201,8 @@ class AndroidDeviceInfo extends BaseDeviceInfo {
       isLowRamDevice: map['isLowRamDevice'],
       physicalRamSize: map['physicalRamSize'],
       availableRamSize: map['availableRamSize'],
+      serialNumber: map['serialNumber'],
+      macAddress: map['macAddress'],
     );
   }
 
@@ -227,6 +235,8 @@ class AndroidDeviceInfo extends BaseDeviceInfo {
     required bool isLowRamDevice,
     required int physicalRamSize,
     required int availableRamSize,
+    required String serialNumber,
+    required String macAddress,
   }) {
     final Map<String, dynamic> data = {
       'version': {
@@ -263,6 +273,8 @@ class AndroidDeviceInfo extends BaseDeviceInfo {
       'isLowRamDevice': isLowRamDevice,
       'physicalRamSize': physicalRamSize,
       'availableRamSize': availableRamSize,
+      'serialNumber': serialNumber,
+      'macAddress': macAddress,
     };
 
     return AndroidDeviceInfo._(
@@ -293,6 +305,8 @@ class AndroidDeviceInfo extends BaseDeviceInfo {
       isLowRamDevice: isLowRamDevice,
       physicalRamSize: physicalRamSize,
       availableRamSize: availableRamSize,
+      serialNumber: serialNumber,
+      macAddress: macAddress,
     );
   }
 
