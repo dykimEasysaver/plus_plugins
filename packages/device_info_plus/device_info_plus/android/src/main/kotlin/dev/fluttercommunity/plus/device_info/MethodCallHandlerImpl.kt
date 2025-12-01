@@ -12,6 +12,14 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import kotlin.collections.HashMap
 import android.os.StatFs
 import android.os.Environment
+import java.io.BufferedReader
+import java.io.FileReader
+import java.io.FileWriter
+import java.io.FileNotFoundException
+import java.io.IOException
+import java.util.Locale
+import java.net.NetworkInterface
+import java.util.Collections
 
 /**
  * The implementation of [MethodChannel.MethodCallHandler] for the plugin. Responsible for
@@ -22,6 +30,103 @@ internal class MethodCallHandlerImpl(
     private val activityManager: ActivityManager,
     private val contentResolver: ContentResolver,
 ) : MethodCallHandler {
+
+
+
+    fun getLANMacAddress(): String? {
+        val filePath = "/sys/class/net/eth0/address"
+        val fileData = StringBuffer()
+        val reader: BufferedReader
+        try {
+            reader = BufferedReader(FileReader(filePath))
+            val buf = CharArray(1024)
+            var numRead = 0
+            while (reader.read(buf).also { numRead = it } != -1) {
+                val readData = String(buf, 0, numRead)
+                fileData.append(readData)
+            }
+            reader.close()
+            if (fileData.length >= 16)
+                return fileData.toString().uppercase(Locale.getDefault()).replace("\n","")
+
+        } catch (e1: FileNotFoundException) {
+            e1.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    fun getDongleMacAddress(): String? {
+
+        try {
+            val writer = FileWriter("/sys/class/unifykeys/name")
+            writer.write("mac")
+            writer.close()
+
+            val reader = BufferedReader(FileReader("/sys/class/unifykeys/read"))
+            val fileData = StringBuffer()
+            val buf = CharArray(1024)
+            var numRead = 0
+            while (reader.read(buf).also { numRead = it } != -1) {
+                val readData = String(buf, 0, numRead)
+                fileData.append(readData)
+            }
+            reader.close()
+            if (fileData.length >= 16)
+                return fileData.toString().uppercase(Locale.getDefault())
+
+        } catch (e1: FileNotFoundException) {
+            e1.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return null
+    }
+
+    fun getEthernetMacAddress(): String {
+        var macAddress = "20:00:00:00:00:00"
+
+        try {
+            val allNetworkInterfaces: List<NetworkInterface> =
+                Collections.list(NetworkInterface.getNetworkInterfaces())
+
+            for (nif in allNetworkInterfaces) {
+
+                //if (!nif.name.equals("eth0", ignoreCase = true)) continue
+                if (!nif.name.equals("eth0", ignoreCase = true)) continue
+                if (nif.hardwareAddress == null)
+                    continue
+
+                val macBytes: ByteArray = nif.hardwareAddress ?: return macAddress
+                val res1 = StringBuilder()
+                for (b in macBytes) {
+                    res1.append(String.format("%02X:", b))
+                }
+                if (res1.isNotEmpty()) {
+                    res1.deleteCharAt(res1.length - 1)
+                }
+                macAddress = res1.toString()
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+
+
+        if (macAddress == "20:00:00:00:00:00") {
+            val lanMacAddress = getLANMacAddress()
+            if (lanMacAddress != null)
+                return lanMacAddress
+        }
+
+        if (macAddress == "20:00:00:00:00:00") {
+            val lanMacAddress = getDongleMacAddress()
+            if (lanMacAddress != null)
+                return lanMacAddress
+        }
+
+        return macAddress
+    }
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         if (call.method.equals("getDeviceInfo")) {
@@ -80,6 +185,20 @@ internal class MethodCallHandlerImpl(
             build["isLowRamDevice"] = memoryInfo.lowMemory
             build["physicalRamSize"] = memoryInfo.totalMem / 1048576L // Mb
             build["availableRamSize"] = memoryInfo.availMem / 1048576L // Mb
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                build["serialNumber"] = try {
+                    Build.getSerial()
+                } catch (ex: SecurityException) {
+                    Build.UNKNOWN
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                build["serialNumber"] = Build.SERIAL
+            }
+
+            build["macAddress"] = getEthernetMacAddress()
+
             result.success(build)
         } else {
             result.notImplemented()
